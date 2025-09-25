@@ -352,12 +352,13 @@ try:
         logging.info("AMD arch: {}".format(arch))
         logging.info("ROCm version: {}".format(rocm_version))
         if args.use_split_cross_attention == False and args.use_quad_cross_attention == False:
-            if importlib.util.find_spec('triton') is not None:  # AMD efficient attention implementation depends on triton. TODO: better way of detecting if it's compiled in or not.
+            # AMD efficient attention implementation depends on triton. TODO: better way of detecting if it's compiled in or not.
+            if importlib.util.find_spec('triton') is not None or rocm_version >= (7, 0):
                 if torch_version_numeric >= (2, 7):  # works on 2.6 but doesn't actually seem to improve much
                     if any((a in arch) for a in ["gfx90a", "gfx942", "gfx1100", "gfx1101", "gfx1151"]):  # TODO: more arches, TODO: gfx950
                         ENABLE_PYTORCH_ATTENTION = True
                 if rocm_version >= (7, 0):
-                   if any((a in arch) for a in ["gfx1201"]):
+                   if any((a in arch) for a in ["gfx1201", "gfx1200"]):
                        ENABLE_PYTORCH_ATTENTION = True
         if torch_version_numeric >= (2, 7) and rocm_version >= (6, 4):
             if any((a in arch) for a in ["gfx1200", "gfx1201", "gfx950"]):  # TODO: more arches, "gfx942" gives error on pytorch nightly 2.10 1013 rocm7.0
@@ -1225,8 +1226,8 @@ def pytorch_attention_enabled():
     return ENABLE_PYTORCH_ATTENTION
 
 def pytorch_attention_enabled_vae():
-    if is_amd():
-        return False  # enabling pytorch attention on AMD currently causes crash when doing high res
+    #if is_amd():
+    #    return False  # enabling pytorch attention on AMD currently causes crash when doing high res
     return pytorch_attention_enabled()
 
 def pytorch_attention_flash_attention():
